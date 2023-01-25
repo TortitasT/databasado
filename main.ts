@@ -1,4 +1,7 @@
-import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
+import {
+  Client,
+  PostgresError,
+} from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 import { exists } from "https://deno.land/std/fs/mod.ts";
 
 const APPDATA_PATH = Deno.env.get("APPDATA") + "\\.databasado" ||
@@ -40,6 +43,8 @@ if (import.meta.main) {
 
     if (!filename) {
       console.error("No se especificó un archivo");
+
+      client.end();
       Deno.exit(1);
     }
 
@@ -61,11 +66,13 @@ if (import.meta.main) {
       console.table(result.rows);
     }
 
-    console.info("%cQuery ejecutado con éxito", "color:green");
+    console.info("%cQuery ejecutada con éxito", "color:green");
   } catch (e) {
     console.error("Algo ha salido mal...");
-    console.error(e);
-    Deno.exit(1);
+
+    if (e instanceof PostgresError) {
+      console.error("%c" + e, "color:red");
+    }
   }
 
   await client.end();
