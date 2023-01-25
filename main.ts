@@ -4,6 +4,8 @@ import { exists } from "https://deno.land/std/fs/mod.ts";
 const APPDATA_PATH = Deno.env.get("APPDATA") + "\\.databasado" ||
   Deno.env.get("HOME") + "\\.databasado";
 
+const CONFIG_PATH = APPDATA_PATH + "\\config.json";
+
 const DEFAULT_CONFIG = {
   database: {
     hostname: "localhost",
@@ -27,8 +29,8 @@ type Config = {
 if (import.meta.main) {
   const config = await readConfig();
 
-  console.info("Configuración en:", APPDATA_PATH + "\\config.json");
-  console.log("...");
+  console.info("Configuración en:");
+  console.info("%c" + CONFIG_PATH, "color: blue");
 
   const client = new Client(config.database);
   await client.connect();
@@ -41,19 +43,28 @@ if (import.meta.main) {
       Deno.exit(1);
     }
 
-    console.info("Intentando leer: ", filename);
+    console.info("Intentando leer: ");
+    console.info("%c" + filename, "color: blue");
 
     const query = Deno.readTextFileSync(
       filename,
     );
 
-    console.info("Ejecutando query: ", query);
+    if (query.length < 200) {
+      console.info("Ejecutando query: ");
+      console.info("%c" + query, "color: blue");
+    }
 
     const result = await client.queryObject(query);
 
-    console.info("Query ejecutado con éxito");
+    if (result.rows.length > 0) {
+      console.table(result.rows);
+    }
+
+    console.info("%cQuery ejecutado con éxito", "color:green");
   } catch (e) {
     console.error("Algo ha salido mal...");
+    console.error(e);
     Deno.exit(1);
   }
 
@@ -66,7 +77,7 @@ async function readConfig(): Promise<Config> {
   await ensureConfig();
 
   return JSON.parse(
-    Deno.readTextFileSync(APPDATA_PATH + "\\config.json"),
+    Deno.readTextFileSync(CONFIG_PATH),
   ) as Config;
 }
 
@@ -79,12 +90,12 @@ async function ensureAppdata() {
 }
 
 async function ensureConfig() {
-  if (await exists(APPDATA_PATH + "\\config.json")) {
+  if (await exists(CONFIG_PATH)) {
     return;
   }
 
   Deno.writeTextFileSync(
-    APPDATA_PATH + "\\config.json",
+    CONFIG_PATH,
     JSON.stringify(DEFAULT_CONFIG),
   );
 }
