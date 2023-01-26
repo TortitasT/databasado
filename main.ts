@@ -38,7 +38,13 @@ if (import.meta.main) {
   const client = new Client(config.database);
   await client.connect();
 
-  try {
+  let query = "";
+
+  if (Deno.args[0] === "clear") {
+    query = "DROP SCHEMA public CASCADE; CREATE SCHEMA public;";
+  } else if (Deno.args[0] === "query") {
+    query = prompt(">") || "";
+  } else {
     const filename = Deno.args[0];
 
     if (!filename) {
@@ -51,7 +57,7 @@ if (import.meta.main) {
     console.info("Intentando leer: ");
     console.info("%c" + filename, "color: blue");
 
-    const query = Deno.readTextFileSync(
+    query = Deno.readTextFileSync(
       filename,
     );
 
@@ -59,7 +65,9 @@ if (import.meta.main) {
       console.info("Ejecutando query: ");
       console.info("%c" + query, "color: blue");
     }
+  }
 
+  try {
     const result = await client.queryObject(query);
 
     if (result.rows.length > 0) {
@@ -76,6 +84,7 @@ if (import.meta.main) {
   }
 
   await client.end();
+  Deno.exit(1);
 }
 
 async function readConfig(): Promise<Config> {
